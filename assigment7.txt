@@ -1,0 +1,79 @@
+% Input number of code bits (n) and message bits (k)
+n = input('Enter the number of code bits n -> ');
+k = input('Enter the number of message bits k -> ');
+
+% Check if values are valid
+if n <= k
+    error('Number of code bits (n) must be greater than message bits (k).');
+end
+
+% Calculate the number of parity bits (q)
+q = n - k;
+
+% Define Identity matrices
+I = eye(q);        % Identity matrix of size (q x q)
+It = eye(k);       % Identity matrix of size (k x k)
+
+% Hardcoded Parity matrix P (replace this with actual matrix)
+P = [1 0 1; 0 1 1; 1 1 0; 1 1 1];  % Example matrix for k = 4, q = 3
+
+% Generate Generator and Parity Check matrices
+Pt = P';           % Transpose of P
+H = [Pt I];        % Parity check matrix H
+Ht = H';           % Transpose of H
+G = [It P];        % Generator matrix G
+
+% Generate all possible message words
+a = 2^k;
+messages = zeros(a, k);
+for i = 0:a-1
+    bin_str = dec2bin(i, k);
+    messages(i+1, :) = bin_str - '0';
+end
+
+% Encode messages to create code words
+r = mod(messages * P, 2);
+c = [messages, r];  % Concatenate message and parity bits
+
+% Display code words
+disp('Encoded code words (C):');
+disp(c);
+
+% Calculate Minimum Hamming Distance (dmin)
+weights = sum(c, 2);
+dmin = min(weights(weights > 0));
+fprintf('Minimum Hamming Distance dmin = %d\n', dmin);
+
+% Define error correction vectors and syndrome table
+x = n;
+e = eye(x);         % Error vectors (single bit errors)
+s = mod(e * Ht, 2); % Syndrome values for single errors
+syndrome_table = s; % Store syndrome values
+
+% Input received codeword for decoding
+rt = input('Enter the received codeword of size (n) -> ');
+
+% Syndrome calculation
+s1 = mod(rt * Ht, 2); % Calculate the syndrome
+
+% Check for errors by comparing syndrome with error patterns
+error_position = 0;
+for f = 1:n
+    if isequal(s1, syndrome_table(f, :))
+        error_position = f;
+        break;
+    end
+end
+
+% Correct the error if detected
+if error_position > 0
+    fprintf('Error detected at position %d. Correcting error...\n', error_position);
+    corrected_codeword = rt;
+    corrected_codeword(error_position) = mod(rt(error_position) + 1, 2); % Flip the bit
+else
+    fprintf('No error detected.\n');
+    corrected_codeword = rt; % No change needed
+end
+
+disp('Corrected Codeword:');
+disp(corrected_codeword);
